@@ -14,71 +14,84 @@ func TestMysqlTypeToGo(t *testing.T) {
 		name     string
 		dataType string
 		nullable bool
+		unsigned bool
 		want     string
 	}{
-		// Integer types
-		{"tinyint", "tinyint", false, "int8"},
-		{"tinyint nullable", "tinyint", true, "*int8"},
-		{"smallint", "smallint", false, "int16"},
-		{"smallint nullable", "smallint", true, "*int16"},
-		{"mediumint", "mediumint", false, "int32"},
-		{"int", "int", false, "int32"},
-		{"integer", "integer", false, "int32"},
-		{"int nullable", "int", true, "*int32"},
-		{"bigint", "bigint", false, "int64"},
-		{"bigint nullable", "bigint", true, "*int64"},
+		// Integer types (signed)
+		{"tinyint", "tinyint", false, false, "int8"},
+		{"tinyint nullable", "tinyint", true, false, "*int8"},
+		{"smallint", "smallint", false, false, "int16"},
+		{"smallint nullable", "smallint", true, false, "*int16"},
+		{"mediumint", "mediumint", false, false, "int32"},
+		{"int", "int", false, false, "int32"},
+		{"integer", "integer", false, false, "int32"},
+		{"int nullable", "int", true, false, "*int32"},
+		{"bigint", "bigint", false, false, "int64"},
+		{"bigint nullable", "bigint", true, false, "*int64"},
+
+		// Integer types (unsigned)
+		{"tinyint unsigned", "tinyint", false, true, "uint8"},
+		{"tinyint unsigned nullable", "tinyint", true, true, "*uint8"},
+		{"smallint unsigned", "smallint", false, true, "uint16"},
+		{"smallint unsigned nullable", "smallint", true, true, "*uint16"},
+		{"mediumint unsigned", "mediumint", false, true, "uint32"},
+		{"int unsigned", "int", false, true, "uint32"},
+		{"int unsigned nullable", "int", true, true, "*uint32"},
+		{"bigint unsigned", "bigint", false, true, "uint64"},
+		{"bigint unsigned nullable", "bigint", true, true, "*uint64"},
 
 		// Float types
-		{"float", "float", false, "float32"},
-		{"float nullable", "float", true, "*float32"},
-		{"double", "double", false, "float64"},
-		{"double nullable", "double", true, "*float64"},
-		{"real", "real", false, "float64"},
-		{"decimal", "decimal", false, "float64"},
-		{"numeric", "numeric", false, "float64"},
+		{"float", "float", false, false, "float32"},
+		{"float nullable", "float", true, false, "*float32"},
+		{"double", "double", false, false, "float64"},
+		{"double nullable", "double", true, false, "*float64"},
+		{"real", "real", false, false, "float64"},
+		{"decimal", "decimal", false, false, "float64"},
+		{"numeric", "numeric", false, false, "float64"},
 
 		// String types
-		{"char", "char", false, "string"},
-		{"char nullable", "char", true, "*string"},
-		{"varchar", "varchar", false, "string"},
-		{"varchar nullable", "varchar", true, "*string"},
-		{"text", "text", false, "string"},
-		{"tinytext", "tinytext", false, "string"},
-		{"mediumtext", "mediumtext", false, "string"},
-		{"longtext", "longtext", false, "string"},
-		{"enum", "enum", false, "string"},
-		{"set", "set", false, "string"},
-		{"json", "json", false, "string"},
+		{"char", "char", false, false, "string"},
+		{"char nullable", "char", true, false, "*string"},
+		{"varchar", "varchar", false, false, "string"},
+		{"varchar nullable", "varchar", true, false, "*string"},
+		{"text", "text", false, false, "string"},
+		{"tinytext", "tinytext", false, false, "string"},
+		{"mediumtext", "mediumtext", false, false, "string"},
+		{"longtext", "longtext", false, false, "string"},
+		{"enum", "enum", false, false, "string"},
+		{"set", "set", false, false, "string"},
+		{"json", "json", false, false, "string"},
 
 		// Binary types
-		{"binary", "binary", false, "[]byte"},
-		{"binary nullable", "binary", true, "[]byte"},
-		{"varbinary", "varbinary", false, "[]byte"},
-		{"blob", "blob", false, "[]byte"},
-		{"tinyblob", "tinyblob", false, "[]byte"},
-		{"mediumblob", "mediumblob", false, "[]byte"},
-		{"longblob", "longblob", false, "[]byte"},
-		{"bit", "bit", false, "[]byte"},
+		{"binary", "binary", false, false, "[]byte"},
+		{"binary nullable", "binary", true, false, "[]byte"},
+		{"varbinary", "varbinary", false, false, "[]byte"},
+		{"blob", "blob", false, false, "[]byte"},
+		{"tinyblob", "tinyblob", false, false, "[]byte"},
+		{"mediumblob", "mediumblob", false, false, "[]byte"},
+		{"longblob", "longblob", false, false, "[]byte"},
+		{"bit", "bit", false, false, "[]byte"},
 
 		// Time types
-		{"datetime", "datetime", false, "time.Time"},
-		{"datetime nullable", "datetime", true, "*time.Time"},
-		{"timestamp", "timestamp", false, "time.Time"},
-		{"timestamp nullable", "timestamp", true, "*time.Time"},
-		{"date", "date", false, "time.Time"},
-		{"time", "time", false, "time.Time"},
-		{"year", "year", false, "int16"},
+		{"datetime", "datetime", false, false, "time.Time"},
+		{"datetime nullable", "datetime", true, false, "*time.Time"},
+		{"timestamp", "timestamp", false, false, "time.Time"},
+		{"timestamp nullable", "timestamp", true, false, "*time.Time"},
+		{"date", "date", false, false, "time.Time"},
+		{"time", "time", false, false, "time.Time"},
+		{"year", "year", false, false, "int16"},
+		{"year unsigned", "year", false, true, "uint16"},
 
 		// Unknown type defaults to string
-		{"unknown", "unknown_type", false, "string"},
-		{"unknown nullable", "unknown_type", true, "*string"},
+		{"unknown", "unknown_type", false, false, "string"},
+		{"unknown nullable", "unknown_type", true, false, "*string"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := mysqlTypeToGo(tt.dataType, tt.nullable)
+			got := mysqlTypeToGo(tt.dataType, tt.nullable, tt.unsigned)
 			if got != tt.want {
-				t.Errorf("mysqlTypeToGo(%q, %v) = %q, want %q", tt.dataType, tt.nullable, got, tt.want)
+				t.Errorf("mysqlTypeToGo(%q, %v, %v) = %q, want %q", tt.dataType, tt.nullable, tt.unsigned, got, tt.want)
 			}
 		})
 	}

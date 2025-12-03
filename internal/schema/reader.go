@@ -3,6 +3,7 @@ package schema
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -11,6 +12,7 @@ type Column struct {
 	Name       string
 	DataType   string
 	IsNullable bool
+	IsUnsigned bool
 	ColumnKey  string
 	Extra      string
 	Comment    string
@@ -65,6 +67,7 @@ func (r *Reader) GetTableSchema(database, tableName string) (*Table, error) {
 			COLUMN_NAME,
 			DATA_TYPE,
 			IS_NULLABLE,
+			COLUMN_TYPE,
 			IFNULL(COLUMN_KEY, ''),
 			IFNULL(EXTRA, ''),
 			IFNULL(COLUMN_COMMENT, '')
@@ -81,11 +84,12 @@ func (r *Reader) GetTableSchema(database, tableName string) (*Table, error) {
 	table := &Table{Name: tableName}
 	for rows.Next() {
 		var col Column
-		var isNullable string
-		if err := rows.Scan(&col.Name, &col.DataType, &isNullable, &col.ColumnKey, &col.Extra, &col.Comment); err != nil {
+		var isNullable, columnType string
+		if err := rows.Scan(&col.Name, &col.DataType, &isNullable, &columnType, &col.ColumnKey, &col.Extra, &col.Comment); err != nil {
 			return nil, fmt.Errorf("failed to scan column: %w", err)
 		}
 		col.IsNullable = isNullable == "YES"
+		col.IsUnsigned = strings.Contains(strings.ToLower(columnType), "unsigned")
 		table.Columns = append(table.Columns, col)
 	}
 	return table, rows.Err()

@@ -9,6 +9,7 @@ func TestColumnStruct(t *testing.T) {
 		Name:       "user_id",
 		DataType:   "bigint",
 		IsNullable: false,
+		IsUnsigned: true,
 		ColumnKey:  "PRI",
 		Extra:      "auto_increment",
 		Comment:    "Primary key",
@@ -22,6 +23,9 @@ func TestColumnStruct(t *testing.T) {
 	}
 	if col.IsNullable != false {
 		t.Errorf("IsNullable = %v, want %v", col.IsNullable, false)
+	}
+	if col.IsUnsigned != true {
+		t.Errorf("IsUnsigned = %v, want %v", col.IsUnsigned, true)
 	}
 	if col.ColumnKey != "PRI" {
 		t.Errorf("ColumnKey = %q, want %q", col.ColumnKey, "PRI")
@@ -96,6 +100,28 @@ func TestColumnNullableField(t *testing.T) {
 
 			if col.IsNullable != tt.isNullable {
 				t.Errorf("IsNullable = %v, want %v", col.IsNullable, tt.isNullable)
+			}
+		})
+	}
+}
+
+func TestColumnUnsignedField(t *testing.T) {
+	tests := []struct {
+		name       string
+		isUnsigned bool
+	}{
+		{"unsigned column", true},
+		{"signed column", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			col := Column{
+				IsUnsigned: tt.isUnsigned,
+			}
+
+			if col.IsUnsigned != tt.isUnsigned {
+				t.Errorf("IsUnsigned = %v, want %v", col.IsUnsigned, tt.isUnsigned)
 			}
 		})
 	}

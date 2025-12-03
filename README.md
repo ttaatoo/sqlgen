@@ -10,6 +10,7 @@ A fast and simple CLI tool that generates Go structs from MySQL table schemas.
 
 - Generate Go structs from MySQL table schemas
 - Automatic type mapping from MySQL to Go types
+- Support for `UNSIGNED` integer types (maps to Go `uint*` types)
 - Support for nullable columns with pointer types
 - Custom `db` tags for database field mapping
 - Generate single table or all tables at once
@@ -75,12 +76,12 @@ Given a MySQL table:
 
 ```sql
 CREATE TABLE user_accounts (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(100) NOT NULL,
     email VARCHAR(255) NOT NULL,
     avatar_url VARCHAR(500),
     balance DECIMAL(10,2) NOT NULL DEFAULT 0,
-    is_active TINYINT NOT NULL DEFAULT 1,
+    is_active TINYINT UNSIGNED NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL,
     updated_at DATETIME,
     deleted_at DATETIME
@@ -103,12 +104,12 @@ import (
 )
 
 type UserAccounts struct {
-	Id        int64      `db:"id"`
+	Id        uint64     `db:"id"`
 	Username  string     `db:"username"`
 	Email     string     `db:"email"`
 	AvatarUrl *string    `db:"avatar_url"`
 	Balance   float64    `db:"balance"`
-	IsActive  int8       `db:"is_active"`
+	IsActive  uint8      `db:"is_active"`
 	CreatedAt time.Time  `db:"created_at"`
 	UpdatedAt *time.Time `db:"updated_at"`
 	DeletedAt *time.Time `db:"deleted_at"`
@@ -120,9 +121,13 @@ type UserAccounts struct {
 | MySQL Type | Go Type | Nullable Go Type |
 |------------|---------|------------------|
 | `TINYINT` | `int8` | `*int8` |
+| `TINYINT UNSIGNED` | `uint8` | `*uint8` |
 | `SMALLINT` | `int16` | `*int16` |
+| `SMALLINT UNSIGNED` | `uint16` | `*uint16` |
 | `INT`, `MEDIUMINT` | `int32` | `*int32` |
+| `INT UNSIGNED`, `MEDIUMINT UNSIGNED` | `uint32` | `*uint32` |
 | `BIGINT` | `int64` | `*int64` |
+| `BIGINT UNSIGNED` | `uint64` | `*uint64` |
 | `FLOAT` | `float32` | `*float32` |
 | `DOUBLE`, `DECIMAL` | `float64` | `*float64` |
 | `CHAR`, `VARCHAR`, `TEXT` | `string` | `*string` |
@@ -184,6 +189,7 @@ err := db.Select(&users, "SELECT * FROM user_accounts")
 | MySQL table schema reading | ✅ |
 | Go struct generation | ✅ |
 | Automatic MySQL → Go type mapping | ✅ |
+| `UNSIGNED` integer type support | ✅ |
 | Nullable column support (pointer types) | ✅ |
 | `db` struct tags | ✅ |
 | Single table generation | ✅ |

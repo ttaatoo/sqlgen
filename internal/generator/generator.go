@@ -97,7 +97,7 @@ func (g *Generator) generateStruct(table *schema.Table) string {
 
 	for _, col := range table.Columns {
 		fieldName := toCamelCase(col.Name)
-		fieldType := mysqlTypeToGo(col.DataType, col.IsNullable)
+		fieldType := mysqlTypeToGo(col.DataType, col.IsNullable, col.IsUnsigned)
 		tag := fmt.Sprintf("`db:\"%s\"`", col.Name)
 
 		buf.WriteString(fmt.Sprintf("\t%s %s %s\n", fieldName, fieldType, tag))
@@ -125,18 +125,34 @@ func (g *Generator) collectImports(table *schema.Table) []string {
 	return result
 }
 
-func mysqlTypeToGo(dataType string, nullable bool) string {
+func mysqlTypeToGo(dataType string, nullable bool, unsigned bool) string {
 	var goType string
 
 	switch dataType {
 	case "tinyint":
-		goType = "int8"
+		if unsigned {
+			goType = "uint8"
+		} else {
+			goType = "int8"
+		}
 	case "smallint":
-		goType = "int16"
+		if unsigned {
+			goType = "uint16"
+		} else {
+			goType = "int16"
+		}
 	case "mediumint", "int", "integer":
-		goType = "int32"
+		if unsigned {
+			goType = "uint32"
+		} else {
+			goType = "int32"
+		}
 	case "bigint":
-		goType = "int64"
+		if unsigned {
+			goType = "uint64"
+		} else {
+			goType = "int64"
+		}
 	case "float":
 		goType = "float32"
 	case "double", "real":
@@ -150,7 +166,11 @@ func mysqlTypeToGo(dataType string, nullable bool) string {
 	case "datetime", "timestamp", "date", "time":
 		goType = "time.Time"
 	case "year":
-		goType = "int16"
+		if unsigned {
+			goType = "uint16"
+		} else {
+			goType = "int16"
+		}
 	case "bit":
 		goType = "[]byte"
 	case "json":
@@ -161,7 +181,7 @@ func mysqlTypeToGo(dataType string, nullable bool) string {
 
 	if nullable {
 		switch goType {
-		case "int8", "int16", "int32", "int64":
+		case "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64":
 			return "*" + goType
 		case "float32", "float64":
 			return "*" + goType
