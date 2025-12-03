@@ -4,6 +4,7 @@ A fast and simple CLI tool that generates Go structs from MySQL table schemas.
 
 [![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.21-blue.svg)](https://golang.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Test Coverage](https://img.shields.io/badge/coverage-96.5%25-brightgreen.svg)]()
 
 ## Features
 
@@ -33,10 +34,10 @@ go build -o sqlgen .
 
 ```bash
 # Generate structs for all tables in a database
-sqlgen -user root -password secret -database myapp -output ./models
+sqlgen -U root -p secret -db myapp -o ./models
 
 # Generate struct for a specific table
-sqlgen -user root -password secret -database myapp -table users -output ./models
+sqlgen -U root -p secret -db myapp -table users -o ./models
 ```
 
 ## Usage
@@ -45,22 +46,27 @@ sqlgen -user root -password secret -database myapp -table users -output ./models
 sqlgen [options]
 
 Options:
-  -host string
+  -H string
         MySQL host (default "localhost")
-  -port int
+  -P int
         MySQL port (default 3306)
-  -user string
+  -U string
         MySQL user (default "root")
-  -password string
+  -p string
         MySQL password
-  -database string
+  -db string
         MySQL database name (required)
   -table string
         Table name (optional, generates all tables if empty)
-  -output string
-        Output directory (default "./models")
-  -package string
-        Package name for generated files (default "models")
+  -o string
+        Output directory (required)
+  -f
+        Force overwrite existing files without confirmation
+
+Examples:
+  sqlgen -U root -p secret -db myapp -o ./models
+  sqlgen -U root -p secret -db myapp -table users -o ./models
+  sqlgen -H 192.168.1.100 -P 3306 -U admin -p pass -db myapp -o ./models -f
 ```
 
 ## Example
@@ -84,7 +90,7 @@ CREATE TABLE user_accounts (
 Running:
 
 ```bash
-sqlgen -database myapp -table user_accounts -output ./models
+sqlgen -U root -p secret -db myapp -table user_accounts -o ./models
 ```
 
 Generates `models/user_accounts.go`:
@@ -183,12 +189,14 @@ err := db.Select(&users, "SELECT * FROM user_accounts")
 | Single table generation | ✅ |
 | Batch generation (all tables) | ✅ |
 | Custom output directory | ✅ |
-| Custom package name | ✅ |
+| Auto package name from output directory | ✅ |
 | `snake_case` file naming | ✅ |
 | `PascalCase` struct/field naming | ✅ |
 | `go fmt` formatted output | ✅ |
 | `time.Time` for datetime types | ✅ |
 | `[]byte` for binary/blob types | ✅ |
+| Overwrite confirmation prompt | ✅ |
+| Force overwrite with `-f` flag | ✅ |
 
 ## Contributing
 

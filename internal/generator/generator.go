@@ -13,16 +13,39 @@ import (
 )
 
 type Generator struct {
-	packageName string
-	outputDir   string
+	packageName  string
+	outputDir    string
+	force        bool
+	confirmFunc  func(filename string) bool
 }
 
-func New(packageName, outputDir string) *Generator {
-	return &Generator{
+type Option func(*Generator)
+
+func WithForce(force bool) Option {
+	return func(g *Generator) {
+		g.force = force
+	}
+}
+
+func WithConfirmFunc(fn func(filename string) bool) Option {
+	return func(g *Generator) {
+		g.confirmFunc = fn
+	}
+}
+
+func New(packageName, outputDir string, opts ...Option) *Generator {
+	g := &Generator{
 		packageName: packageName,
 		outputDir:   outputDir,
 	}
+	for _, opt := range opts {
+		opt(g)
+	}
+	return g
 }
+
+// ErrSkipped is returned when user chooses to skip overwriting a file
+var ErrSkipped = fmt.Errorf("skipped")
 
 func (g *Generator) Generate(table *schema.Table) error {
 	if err := os.MkdirAll(g.outputDir, 0755); err != nil {
@@ -36,9 +59,19 @@ func (g *Generator) Generate(table *schema.Table) error {
 	}
 
 	filename := toSnakeCase(table.Name) + ".go"
-	filepath := filepath.Join(g.outputDir, filename)
+	filePath := filepath.Join(g.outputDir, filename)
 
-	if err := os.WriteFile(filepath, formatted, 0644); err != nil {
+	// Check if file exists
+	if _, err := os.Stat(filePath); err == nil {
+		// File exists
+		if !g.force && g.confirmFunc != nil {
+			if !g.confirmFunc(filePath) {
+				return ErrSkipped
+			}
+		}
+	}
+
+	if err := os.WriteFile(filePath, formatted, 0644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
@@ -82,15 +115,6 @@ func (g *Generator) collectImports(table *schema.Table) []string {
 		switch col.DataType {
 		case "datetime", "timestamp", "date", "time":
 			imports["time"] = true
-		case "decimal", "numeric":
-			// could add decimal package if needed
-		}
-
-		if col.IsNullable {
-			switch col.DataType {
-			case "datetime", "timestamp", "date", "time":
-				imports["database/sql"] = true
-			}
 		}
 	}
 
